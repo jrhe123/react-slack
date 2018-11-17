@@ -10,6 +10,7 @@ import {
   Message,
   Icon
 } from 'semantic-ui-react';
+import md5 from 'md5';
 
 // Route
 import { Link } from 'react-router-dom';
@@ -26,6 +27,7 @@ class Register extends Component {
     passwordConfirmation: '',
     errors: [],
     loading: false,
+    userRef: firebase.database().ref('users')
   }
 
   handleChange = (e) => {
@@ -45,6 +47,7 @@ class Register extends Component {
       });
 
       const {
+        username,
         email,
         password,
       } = this.state;
@@ -53,11 +56,23 @@ class Register extends Component {
         .auth()
         .createUserWithEmailAndPassword(email, password)
         .then((createdUser) => {
-          console.log('createdUser: ', createdUser);
-
-          this.setState({
-            loading: false
+          createdUser.user.updateProfile({
+            displayName: username,
+            photoURL: `http://gravatar.com/avatar/${md5(createdUser.user.email)}?d=identicon`
           })
+            .then(() => {
+
+              this.saveUser(createdUser)
+                .then(() => {
+                  console.log('user saved');
+                })
+            })
+            .catch((error) => {
+              this.setState({
+                errors: this.state.errors.concat(error),
+                loading: false
+              })
+            })
         })
         .catch((error) => {
           this.setState({
@@ -66,6 +81,13 @@ class Register extends Component {
           })
         })
     }
+  }
+
+  saveUser = (createdUser) => {
+    return this.state.userRef.child(createdUser.user.uid).set({
+      name: createdUser.user.displayName,
+      avatar: createdUser.user.photoURL,
+    })
   }
 
   isFormValid = () => {
@@ -113,7 +135,7 @@ class Register extends Component {
     )
   }
 
-  handleInputError =(errors, inputName) => {
+  handleInputError = (errors, inputName) => {
     return errors.some(error => error.message.toLowerCase().includes(inputName)) ? 'error' : '';
   }
 
