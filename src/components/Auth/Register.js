@@ -24,7 +24,8 @@ class Register extends Component {
     email: '',
     password: '',
     passwordConfirmation: '',
-    errors: []
+    errors: [],
+    loading: false,
   }
 
   handleChange = (e) => {
@@ -37,6 +38,12 @@ class Register extends Component {
     e.preventDefault();
 
     if (this.isFormValid()) {
+
+      this.setState({
+        errors: [],
+        loading: true,
+      });
+
       const {
         email,
         password,
@@ -47,9 +54,16 @@ class Register extends Component {
         .createUserWithEmailAndPassword(email, password)
         .then((createdUser) => {
           console.log('createdUser: ', createdUser);
+
+          this.setState({
+            loading: false
+          })
         })
         .catch((error) => {
-          console.log('error: ', error);
+          this.setState({
+            errors: this.state.errors.concat(error),
+            loading: false
+          })
         })
     }
   }
@@ -99,6 +113,10 @@ class Register extends Component {
     )
   }
 
+  handleInputError =(errors, inputName) => {
+    return errors.some(error => error.message.toLowerCase().includes(inputName)) ? 'error' : '';
+  }
+
   render() {
 
     const {
@@ -107,6 +125,7 @@ class Register extends Component {
       password,
       passwordConfirmation,
       errors,
+      loading,
     } = this.state;
 
     return (
@@ -139,6 +158,7 @@ class Register extends Component {
                 placeholder="Email address"
                 type="email"
                 value={email}
+                className={this.handleInputError(errors, 'email')}
                 onChange={this.handleChange}
               />
               <Form.Input
@@ -149,6 +169,7 @@ class Register extends Component {
                 placeholder="Password"
                 type="password"
                 value={password}
+                className={this.handleInputError(errors, 'password')}
                 onChange={this.handleChange}
               />
               <Form.Input
@@ -159,9 +180,12 @@ class Register extends Component {
                 placeholder="Password Confirmation"
                 type="password"
                 value={passwordConfirmation}
+                className={this.handleInputError(errors, 'password')}
                 onChange={this.handleChange}
               />
               <Button
+                disabled={loading}
+                className={loading ? "loading" : ""}
                 color="orange"
                 fluid
                 size="large"
